@@ -7,3 +7,5 @@ Is visible as Github pages (branch gh-pages) to allow Internet linking.
 ```bash
   $ xsltproc http://oeuvres.github.io/Teinte/tei2html.xsl mytei.xml > mytei.html
 ```
+
+TODO, index.html
