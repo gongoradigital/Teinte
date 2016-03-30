@@ -4,10 +4,10 @@
  * © 2015, frederic.glorieux@fictif.org et LABEX OBVIL
  *
  * This program is a free software: you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License 
+ * under the terms of the GNU Lesser General Public License
  * http://www.gnu.org/licenses/lgpl.html
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  */
@@ -80,7 +80,7 @@ table.sortable td.string { text-align: left; } \
 table.sortable tr td { border-bottom: none; border-top: none; } \
 tr.even { } \
 tr.odd { background-color: #F5F3EB; } \
-table.sortable th, table.table th, table.data th { vertical-align: middle; text-align: left; padding: 5px 1ex 5px 1ex; background-color: #F5F3EB; border: none; } \
+table.sortable th { vertical-align: middle; text-align: left; padding: 5px 1ex 5px 1ex; background-color: #F5F3EB; border: none; } \
 table.sortable th { text-align: center; } \
 tr.even th, tr.odd th { text-align: right; } \
 table.sortable tr.mod5 td { border-top: solid 1px #888; } \
@@ -92,6 +92,8 @@ table.sortable th a { display:block; } \
 table.sortable a:hover { background: #FFFFFF; box-shadow: 0px 0px 20px #AAAAAA; } \
 table.sortable th a:hover { background-color: #FFFFFF; border: none} \
 th.num, table.sortable th.num { text-align: right; font-weight: 100; font-size: 85%; padding: 0 1px; } \
+.sortheader { cursor: pointer; } \
+/* .sortheader b { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; } */ \
 ";
     var head = document.getElementsByTagName('head')[0];
     head.insertBefore(css, head.firstChild);
@@ -135,7 +137,7 @@ th.num, table.sortable th.num { text-align: right; font-weight: 100; font-size: 
     // numerical key
     if (table.lines[0][key] === +table.lines[0][key]) {
       var comparator=function(a, b) {
-        return a[key] - b[key];
+        return b[key] - a[key]; // for numeric keys, default, bigger first
       }
       if (reverse) table.lines.reverse(comparator);
       else table.lines.sort(comparator);
@@ -187,7 +189,7 @@ th.num, table.sortable th.num { text-align: right; font-weight: 100; font-size: 
       var text = cell.innerHTML.replace(/<.+>/g, '');
       if (cell.className.indexOf("unsort") != -1 || cell.className.indexOf("nosort") != -1 || Sortable.trim(text) == '') continue;
       cell.table=table;
-      cell.innerHTML = '<a href="#" class="sortheader" onclick="Sortable.sort(this.parentNode.table, \'key'+i+'\', this.reverse); this.reverse=!this.reverse ; return false;">↓'+text+'↑</a>'; //
+      cell.innerHTML = '<b class="sortheader" onclick="Sortable.sort(this.parentNode.table, \'key'+i+'\', this.reverse); this.reverse=!this.reverse ; return false;">↓'+text+'↑</b>'; //
     }
     if (!table.tBodies) {
       tbody = table.createTBody();
