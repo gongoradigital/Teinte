@@ -76,7 +76,7 @@ var Sortable = {
     css.innerHTML = "\
 table.sortable { font-family: sans-serif; font-size: 12px; line-height: 105%; border: 1px solid; border-color: #CCCCCC; margin-top: 1em; margin-bottom: 2em; border-collapse: collapse; } \
 table.sortable caption { background-color: #F5F3EB; padding: 2px 1ex 2px 1ex } \
-table.sortable td { vertical-align: top; border: #CCCCCC 1px solid; padding: 2px 1ex; } \
+table.sortable td { vertical-align: middle; border: #CCCCCC 1px solid; padding: 2px 1ex; } \
 table.sortable td.string { text-align: left; } \
 table.sortable tr td { border-bottom: none; border-top: none; } \
 tr.even { } \
@@ -94,7 +94,9 @@ table.sortable a:hover { background: #FFFFFF; box-shadow: 0px 0px 20px #AAAAAA; 
 table.sortable th a:hover { background-color: #FFFFFF; border: none} \
 th.num, table.sortable th.num { text-align: right; font-weight: 100; font-size: 85%; padding: 0 1px; } \
 .sortheader { cursor: pointer; } \
-/* .sortheader b { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; } */ \
+.sortheader:before { content: '▼'} \
+.sortheader:after { content: '▲'} \
+/* .sortheader b { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; } unselectable text is replaces by a line break, bad */ \
 ";
     var head = document.getElementsByTagName('head')[0];
     head.insertBefore(css, head.firstChild);
@@ -201,7 +203,7 @@ th.num, table.sortable th.num { text-align: right; font-weight: 100; font-size: 
       if (cell.className.indexOf("unsort") != -1 || cell.className.indexOf("nosort") != -1 || Sortable.trim(text) == '') continue;
       cell.className = cell.className+' head';
       cell.table=table;
-      cell.innerHTML = '<b class="sortheader" onclick="Sortable.sort(this.parentNode.table, \'key'+i+'\', this.reverse); this.reverse=!this.reverse ; return false;">↓'+text+'↑</b>'; //
+      cell.innerHTML = '<b class="sortheader" onclick="Sortable.sort(this.parentNode.table, \'key'+i+'\', this.reverse); this.reverse=!this.reverse ; return false;">'+text+'</b>'; //
     }
     if (!table.tBodies) {
       tbody = table.createTBody();
@@ -236,7 +238,7 @@ th.num, table.sortable th.num { text-align: right; font-weight: 100; font-size: 
     // return text.substring(0, 10) ;
     text=Sortable.trim(text);
     // num
-    n=parseFloat(text.replace(/,/g, '.').replace(/[  ]/g, ''));
+    n=parseFloat(text.replace(/,/g, '.').replace(/[ ~]/g, ''));
     // text
     if (isNaN(n)) {
       text=text.toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae').replace(/ç/g, 'c').replace(/ñ/g, 'n').replace(/[éèêë]/g, 'e').replace(/[áàâä]/g, 'a').replace(/[íìîï]/g, 'i').replace(/úùûü/, 'u').replace(/\W/g, '') ;

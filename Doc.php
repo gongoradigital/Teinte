@@ -7,8 +7,7 @@ else if (isset($_SERVER['ORIG_SCRIPT_FILENAME']) && realpath($_SERVER['ORIG_SCRI
 else if (php_sapi_name() == "cli") Teinte_Doc::cli();
 
 /**
- Sample pilot for Teinte transformations of XML/TEI
-
+ * Sample pilot for Teinte transformations of XML/TEI
  */
 class Teinte_Doc {
   /** TEI/XML DOM Document to process */
@@ -28,12 +27,12 @@ class Teinte_Doc {
   /** Keep memory of last xsl, to optimize transformations */
   private $_xslfile;
   /** formats */
-  static $_formats = array(
+  public static $ext = array(
     'article' => '.html',
     'html' => '.html',
-    'markdown' => '.md',
+    'markdown' => '.txt',
     'iramuteq' => '.txt',
-
+    'naked' => '.txt',
   );
   /**
    * Constructor, load file and prepare work
@@ -42,7 +41,7 @@ class Teinte_Doc {
     if (is_a($tei, 'DOMDocument') ) {
       $this->_dom = $tei;
     }
-    else if(is_string($tei)) { // maybe file or url
+    else if( is_string( $tei ) ) { // maybe file or url
       $this->_file = $tei;
       $this->_filemtime = filemtime($tei);
       $this->_filename = pathinfo($tei, PATHINFO_FILENAME);
@@ -68,15 +67,17 @@ class Teinte_Doc {
   /**
    * Get the filename (with no extention)
    */
-   public function filename()
+   public function filename( $filename=null )
    {
+     if ( $filename ) $this->_filename = $filename;
      return $this->_filename;
    }
    /**
     * Read a readonly property
     */
-    public function filemtime()
+    public function filemtime( $filemtime=null )
     {
+      if ( $filemtime ) $this->_filemtime = $filemtime;
       return $this->_filemtime;
     }
   /**
@@ -126,7 +127,8 @@ class Teinte_Doc {
     }
     if (!$meta['issued'] && isset($value) && is_numeric($value)) $meta['issued'] = $value;
     $meta['source'] = null;
-
+    $meta['filename'] = $this->filename();
+    $meta['filemtime'] = $this->filemtime();
 
 
     return $meta;
@@ -135,7 +137,7 @@ class Teinte_Doc {
    *
    */
   public function export($format, $destfile=null) {
-    if (isset(self::$_formats[$format])) return call_user_func(array($this, $format), $destfile);
+    if (isset(self::$ext[$format])) return call_user_func(array($this, $format), $destfile);
     else if (STDERR) fwrite(STDERR, $format." ? format not yet implemented\n");
   }
   /**
@@ -179,14 +181,42 @@ class Teinte_Doc {
   /**
    * Output markdown
    */
-  public function markdown($destfile=null) {
+  public function markdown( $destfile=null )
+  {
     return $this->transform(dirname(__FILE__).'/tei2md.xsl', $destfile, array('filename' => $this->_filename));
   }
   /**
    * Output iramuteq text
    */
-  public function iramuteq($destfile=null) {
+  public function iramuteq( $destfile=null )
+  {
     return $this->transform(dirname(__FILE__).'/tei2iramuteq.xsl', $destfile);
+  }
+  /**
+   * Output txm XML
+   */
+  public function txm( $destfile=null )
+  {
+    return $this->transform(dirname(__FILE__).'/tei4txm.xsl', $destfile);
+  }
+  /**
+   * Output naked text
+   */
+  public function naked( $destfile=null )
+  {
+    $txt = $this->transform(dirname(__FILE__).'/tei2naked.xsl' );
+    $txt = preg_replace(
+      array(
+        "@([\s\(\[])(c|C|d|D|j|J|usqu|Jusqu|l|L|lorsqu|m|M|n|N|puisqu|Puisqu|qu|Qu|quoiqu|Quoiqu|s|S|t|T)['’]@u",
+      ),
+      array(
+        '$1$2e '
+      ),
+      $txt
+    );
+    if ( !$destfile ) return $txt;
+    file_put_contents( $destfile, $txt );
+    return $destfile;
   }
   /**
    * Preprocess TEI with a transformation
@@ -215,6 +245,7 @@ class Teinte_Doc {
         $this->_trans->setParameter( null, $key, $value );
       }
     }
+    // return a DOM document for efficient piping
     if (is_a($dest, 'DOMDocument') ) {
       $ret = $this->_trans->transformToDoc( $this->_dom );
     }
@@ -226,7 +257,7 @@ class Teinte_Doc {
       $this->_trans->transformToURI( $this->_dom, $dest );
       $ret = $dest;
     }
-    // no dst file, return dom, so that piping can continue
+    // no dst file, return String
     else {
       $ret = $this->_trans->transformToXML( $this->_dom );
     }
@@ -258,7 +289,7 @@ class Teinte_Doc {
    * Command line transform
    */
   public static function cli() {
-    $formats=implode('|', array_keys(self::$_formats));
+    $formats=implode( '|', array_keys( self::$ext ) );
     array_shift($_SERVER['argv']); // shift first arg, the script filepath
     if (!count($_SERVER['argv'])) exit('
     usage     : php -f Doc.php ('.$formats.')? destdir/? "*.xml"
@@ -289,7 +320,7 @@ class Teinte_Doc {
     foreach ($_SERVER['argv'] as $glob) {
       foreach(glob($glob) as $srcfile) {
         $count++;
-        $destname = pathinfo($srcfile, PATHINFO_FILENAME).self::$_formats[$format];
+        $destname = pathinfo($srcfile, PATHINFO_FILENAME).self::$ext[$format];
         if (isset($destdir)) $destfile = $destdir.$destname;
         else $destfile=dirname($srcfile).'/'.$destname;
         if (STDERR) fwrite(STDERR, "$count. $srcfile > $destfile\n");
