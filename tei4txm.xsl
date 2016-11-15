@@ -41,13 +41,11 @@ XML TEI allégé, par exemple pièce de théâtre sans didascalies, ou critique 
     | tei:event
     | tei:figure
     | tei:front
-    | tei:head
     | tei:label
     | tei:listBibl
     | tei:note
     | tei:person
     | tei:place
-    | tei:quote
     | tei:ref[not(node())] 
     | tei:salute 
     | tei:signed
@@ -55,11 +53,14 @@ XML TEI allégé, par exemple pièce de théâtre sans didascalies, ou critique 
     | tei:stage
     | tei:titlePart 
     | tei:trailer
-    | tei:teiHeader
     | tei:titlePage
     | tei:titlePart
     
     " mode="txm"/>
+  <!--
+    | tei:quote
+    | tei:head
+    -->
 
   <!-- Rétablissement de césure -->
   <xsl:template match="tei:caes" mode="txm">
@@ -98,5 +99,13 @@ XML TEI allégé, par exemple pièce de théâtre sans didascalies, ou critique 
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
+  
+  <xsl:template match="tei:name[@type='authority'] | tei:persName[@type='authority']" mode="txm">
+    <authority>
+      <xsl:apply-templates mode="txm"/>
+    </authority>
+  </xsl:template>
+
+  <xsl:template match="tei:quote[tei:lg] | tei:p[tei:quote][normalize-space(text()) = ''] | tei:quote[tei:l]"/>
 
 </xsl:transform>
