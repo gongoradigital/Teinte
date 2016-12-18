@@ -333,6 +333,8 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
             <a:documentation>Théâtre, acte.</a:documentation>
             <value>appendix</value>
             <a:documentation>Appendice, paratexte, généralement dans &lt;back></a:documentation>
+            <value>argument</value>
+            <a:documentation>Argument, paratexte, généralement en entête, parfois entre deux actes</a:documentation>
             <value>article</value>
             <a:documentation>Article, niveau de référence du découpage du texte. Peut être contenu dans une structuration supérieure (partie, livre…), ou contenir d'autres divisions (sections…). Ce terme ne doit pas être utilisé pour un niveau inférieur ou supérieur à la division de référence d'un texte.</a:documentation>
             <value>book</value>
@@ -363,8 +365,12 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
             <a:documentation>Notes de fin de volume, paratexte, généralement dans &lt;back></a:documentation>
             <value>poem</value>
             <a:documentation>Un poème</a:documentation>
+            <value>postface</value>
+            <a:documentation>Postface, paratexte, généralement dans &lt;back></a:documentation>
             <value>preface</value>
             <a:documentation>Préface, paratexte, généralement dans &lt;front></a:documentation>
+            <value>privilege</value>
+            <a:documentation>Privilège d’imprimer, paratexte</a:documentation>
             <value>prologue</value>
             <a:documentation>Prologue, par exemple dans une pièce de théâtre, préférer une division typée à l’élément prologue de la TEI qui n’est autorisé que dans l’avant-texte <a:el>front</a:el>.</a:documentation>
             <value>scene</value>
@@ -1356,8 +1362,7 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
             <ref name="note"/>
             <ref name="num"/>
             <ref name="ref"/>
-            <ref name="term"/>
-            <ref name="title"/>
+            <ref name="indexable"/>
           </choice>
         </oneOrMore>
       </element>
@@ -1919,19 +1924,21 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
           <oneOrMore>
             <choice>
               <text/>
-              <ref name="listPerson"/>
               <ref name="hi"/>
+              <ref name="listPerson"/>
               <ref name="note"/>
+              <ref name="pb"/>
               <ref name="ref"/>
             </choice>
           </oneOrMore>
           <oneOrMore>
             <choice>
-              <ref name="listPerson"/>
-              <ref name="p"/>
-              <ref name="quote-p"/>
-              <ref name="lg"/>
               <ref name="l"/>
+              <ref name="listPerson"/>
+              <ref name="lg"/>
+              <ref name="p"/>
+              <ref name="pb"/>
+              <ref name="quote-p"/>
             </choice>
           </oneOrMore>
         </choice>
@@ -1991,6 +1998,17 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
         </div>
         <ref name="index-atts"/>
         <ref name="rendering.char"/>
+        <optional>
+          <ref name="resp-att"/>
+        </optional>
+        <optional>
+          <attribute name="role">
+            <choice>
+              <value>translator</value>
+              <text/>
+            </choice>
+          </attribute>
+        </optional>
         <zeroOrMore>
           <choice>
             <text/>
@@ -2354,6 +2372,21 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
         </choice>
       </element>
     </define>
+    <define name="resp-att">
+      <attribute name="resp">
+        <choice>
+          <value>author</value>
+          <a:documentation>note de l’auteur</a:documentation>
+          <value>editor</value>
+          <a:documentation>note de l’éditeur</a:documentation>
+          <value>translator</value>
+          <a:documentation>note du traducteur</a:documentation>
+          <value>©</value>
+          <a:documentation>note protégée par le droit d’auteur au moment de l’écriture du fichier</a:documentation>
+          <text/>
+        </choice>
+      </attribute>
+    </define>
     <define name="note">
       <element name="note">
         <a:documentation>Une note, encodée dans le flux du texte, au point de l’appel.</a:documentation>
@@ -2366,19 +2399,7 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
           <ref name="n-att"/>
         </optional>
         <optional>
-          <attribute name="resp">
-            <choice>
-              <value>author</value>
-              <a:documentation>note de l’auteur</a:documentation>
-              <value>editor</value>
-              <a:documentation>note de l’éditeur</a:documentation>
-              <value>translator</value>
-              <a:documentation>note du traducteur</a:documentation>
-              <value>©</value>
-              <a:documentation>note protégée par le droit d’auteur au moment de l’écriture du fichier</a:documentation>
-              <text/>
-            </choice>
-          </attribute>
+          <ref name="resp-att"/>
         </optional>
         <!-- Quel genre de rendu attendu ?
         <ref name="rendering-atts"/>
@@ -2682,25 +2703,28 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
       <a:documentation>Information de rendu pour un bloc, combine des rendus de niveau caractère et de niveau bloc avec possibilité de classe personnalisé comme une liste de tokens séparés d'espaces.</a:documentation>
       <optional>
         <attribute name="rend">
-          <!-- list ? -->
-          <choice>
-            <ref name="rend.font"/>
-            <ref name="rend.align"/>
-            <value>argument</value>
-            <a:documentation>Valeur sémantique d’un élément argument, mais qui autorise à placer un élément &lt;stage&gt; avant (édition de théâtre)</a:documentation>
-            <value>indent</value>
-            <a:documentation>Indentation de première ligne (lorsque pas d’indentation par défaut)</a:documentation>
-            <value>lg</value>
-            <a:documentation>Utile provisoirement, mais lg/l est préférable.</a:documentation>
-            <value>noindent</value>
-            <a:documentation>Pas d’indentation de première ligne (lorsque indentation par défaut)</a:documentation>
-            <!-- Essayer de bloquer ? Et laisser rendition pour personnaliser
-            <data type="token"/>
-            -->
-            <!--  -->
-            <value>pre</value>
-            <a:documentation>Bloc préformaté, conserver les espaces et sauts de ligne, police à chasse fixe. Pour des exemples de codes, préférer @lt;eg>. @rend='pre' peut servir à rendre des formules mathématiques.</a:documentation>
-          </choice>
+          <list>
+            <oneOrMore>
+              <choice>
+                <ref name="rend.font"/>
+                <ref name="rend.align"/>
+                <value>argument</value>
+                <a:documentation>Valeur sémantique d’un élément argument, mais qui autorise à placer un élément &lt;stage&gt; avant (édition de théâtre)</a:documentation>
+                <value>indent</value>
+                <a:documentation>Indentation de première ligne (lorsque pas d’indentation par défaut)</a:documentation>
+                <value>lg</value>
+                <a:documentation>Utile provisoirement, mais lg/l est préférable.</a:documentation>
+                <value>noindent</value>
+                <a:documentation>Pas d’indentation de première ligne (lorsque indentation par défaut)</a:documentation>
+                <!-- Essayer de bloquer ? Et laisser rendition pour personnaliser
+              <data type="token"/>
+              -->
+                <!--  -->
+                <value>pre</value>
+                <a:documentation>Bloc préformaté, conserver les espaces et sauts de ligne, police à chasse fixe. Pour des exemples de codes, préférer @lt;eg>. @rend='pre' peut servir à rendre des formules mathématiques.</a:documentation>
+              </choice>
+            </oneOrMore>
+          </list>
         </attribute>
       </optional>
       <optional>
@@ -2711,7 +2735,9 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
       <a:documentation>Information de rendu pour un segment de caractères, liste fermée de tokens séparés d’espaces.</a:documentation>
       <optional>
         <attribute name="rend">
-          <ref name="rend.font"/>
+          <list>
+            <ref name="rend.font"/>
+          </list>
         </attribute>
       </optional>
       <optional>

@@ -891,22 +891,13 @@ résoudre les césures, ou les alternatives éditoriales.
         <xsl:apply-templates select="tei:div[1]" mode="title"/>
       </xsl:when>
       -->
-      <xsl:when test="@n and @type">
-        <xsl:text>[</xsl:text>
-        <xsl:value-of select="@type"/>
-        <xsl:text> </xsl:text>
-        <xsl:value-of select="@n"/>
-        <xsl:text>]</xsl:text>
-      </xsl:when>
       <xsl:when test="@n">
-        <xsl:text>[</xsl:text>
         <xsl:value-of select="@n"/>
-        <xsl:text>]</xsl:text>
       </xsl:when>
       <xsl:when test="@type">
-        <xsl:text>[</xsl:text>
-        <xsl:value-of select="@type"/>
-        <xsl:text>]</xsl:text>
+        <xsl:call-template name="message">
+          <xsl:with-param name="id" select="@type"/>
+        </xsl:call-template>
       </xsl:when>
       <xsl:when test="self::tei:div and parent::tei:body">
         <xsl:text>[</xsl:text>
@@ -948,7 +939,24 @@ résoudre les césures, ou les alternatives éditoriales.
   </xsl:template>
   <!-- no notes in title mode -->
   <xsl:template match="tei:note | tei:index" mode="title"/>
-  <xsl:template match="tei:lb | tei:pb" mode="title">
+  <xsl:template match="tei:pb" mode="title">
+    <xsl:text> </xsl:text>
+  </xsl:template>
+  <xsl:template match="tei:lb" mode="title">
+    <xsl:variable name="prev" select="preceding-sibling::node()"/>
+    <xsl:variable name="norm" select="normalize-space( $prev )"/>
+    <xsl:variable name="lastchar" select="substring($norm, string-length($norm))"/>
+    <xsl:choose>
+      <xsl:when test="contains(',.;:—–-', $lastchar)">
+        <xsl:text> </xsl:text>
+      </xsl:when>
+      <xsl:when test="string-length($prev) = string-length($norm)">
+        <xsl:text>. </xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text> – </xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:text> </xsl:text>
   </xsl:template>
   <xsl:template match="tei:choice" mode="title">
@@ -1098,6 +1106,7 @@ résoudre les césures, ou les alternatives éditoriales.
         <xsl:text>#</xsl:text>
         <xsl:value-of select="$id"/>
       </xsl:when>
+      <!-- For a deported page of notes (site or epub) -->
       <xsl:when test="$class = 'noteref' and $fnpage != ''">
         <xsl:value-of select="$base"/>
         <xsl:value-of select="$fnpage"/>
