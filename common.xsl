@@ -306,6 +306,8 @@ Gobal TEI parameters and variables are divided in different categories
   <xsl:variable name="html">html</xsl:variable>
   <xsl:variable name="article">article</xsl:variable>
   <xsl:variable name="nav">nav</xsl:variable>
+  <xsl:variable name="ul">ul</xsl:variable>
+  <xsl:variable name="ol">ol</xsl:variable>
   <xsl:variable name="front">front</xsl:variable>
   <xsl:variable name="back">back</xsl:variable>
   <!-- Upper case letters with diactitics, for translate() -->
@@ -1096,13 +1098,8 @@ résoudre les césures, ou les alternatives éditoriales.
       <xsl:call-template name="id"/>
     </xsl:param>
     <xsl:choose>
-      <!-- When there is a mode and it is not site, let anchors -->
-      <xsl:when test="$mode != '' and  $mode != 'site'">
-        <xsl:text>#</xsl:text>
-        <xsl:value-of select="$id"/>
-      </xsl:when>
       <!-- When transform is called from monopage  -->
-      <xsl:when test="$this = 'tei2html.xsl'">
+      <xsl:when test="$this = 'tei2html.xsl' or $this = 'tei2toc.xsl'">
         <xsl:text>#</xsl:text>
         <xsl:value-of select="$id"/>
       </xsl:when>
