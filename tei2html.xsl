@@ -510,8 +510,12 @@ et -1 pour chaque niveau ensuite, d'où le paramètre $level qui peut
   <xsl:template match="tei:p">
     <p>
       <xsl:variable name="prev" select="preceding-sibling::*[not(self::tei:pb)][1]"/>
+      <xsl:variable name="char1" select="substring(normalize-space(.), 0, 1)"/>
       <xsl:choose>
-        <xsl:when test="contains(concat(' ', @rend, ' '), 'indent')">
+        <xsl:when test="contains( '-–—0123456789', $char1 )">
+          <xsl:call-template name="atts"/>
+        </xsl:when>
+        <xsl:when test="contains(concat(' ', @rend, ' '), ' indent ')">
           <xsl:call-template name="atts"/>
         </xsl:when>
         <xsl:when test="$prev and contains('-–—', substring(normalize-space($prev), 1, 1))">
@@ -570,9 +574,20 @@ et -1 pour chaque niveau ensuite, d'où le paramètre $level qui peut
       <xsl:when test="@type='hr'">
         <hr align="center" width="30%"/>
       </xsl:when>
-      <xsl:otherwise>
+      <xsl:when test="normalize-space(.) = ''">
         <div>
           <xsl:call-template name="atts"/>
+          <xsl:text> </xsl:text>
+          <xsl:apply-templates/>
+        </div>
+      </xsl:when>
+      <xsl:otherwise>
+        <div>
+          <xsl:call-template name="atts">
+            <xsl:with-param name="class">
+              <xsl:if test="substring(normalize-space(.), 1, 1) = '*'">star</xsl:if>
+            </xsl:with-param>
+          </xsl:call-template>
           <xsl:apply-templates/>
         </div>
       </xsl:otherwise>
@@ -2112,6 +2127,7 @@ Elements block or inline level
       <xsl:otherwise>
         <xsl:variable name="el">
           <xsl:choose>
+            <xsl:when test="self::tei:label and parent::tei:figure">div</xsl:when>
             <xsl:when test="self::tei:label">p</xsl:when>
             <xsl:when test="self::tei:quote">blockquote</xsl:when>
             <xsl:otherwise>div</xsl:otherwise>
@@ -2120,8 +2136,9 @@ Elements block or inline level
         <xsl:element name="{$el}" namespace="http://www.w3.org/1999/xhtml">
           <xsl:call-template name="atts">
             <xsl:with-param name="class">
+              <xsl:value-of select="local-name()"/>
               <!-- modify rendering when contain verses -->
-              <xsl:if test="tei:l">l</xsl:if>
+              <xsl:if test="tei:l"> l</xsl:if>
               <xsl:if test="tei:lg"> lg</xsl:if>
               <xsl:if test="@corresp"> corresp</xsl:if>
             </xsl:with-param>
