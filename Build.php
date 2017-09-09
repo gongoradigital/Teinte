@@ -32,7 +32,7 @@ class Teinte_Build
     // 'docx' => '.docx',
   );
   /** Columns reference to build queries */
-  static $coldoc = array("code", "filemtime", "filesize", "deps", "title", "byline", "date", "source", "identifier", "publisher", "class" );
+  static $coldoc = array("code", "filemtime", "filesize", "deps", "title", "byline", "editby", "date", "source", "identifier", "publisher", "class" );
   /** Sqlite persistency */
   static $create = "
 PRAGMA encoding = 'UTF-8';
@@ -53,14 +53,15 @@ CREATE table doc (
   issued      INTEGER, -- ? publication year of the text
   bibl        TEXT,    -- ? publication year of the text
   source      TEXT,    -- ? URL of source file (ex: XML/TEI)
+  editby      TEXT,    -- ? editors
   publisher   TEXT,    -- ? Name of the original publisher of the file in case of compilation
   identifier  TEXT,    -- ? URL of the orginal publication in case of compilation
   class       TEXT,    -- ? a classname
   PRIMARY KEY(id ASC)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS doc_code ON doc( code );
-CREATE INDEX IF NOT EXISTS doc_byline_date ON doc( byline, date, title );
-CREATE INDEX IF NOT EXISTS doc_date_byline ON doc( date, byline, title );
+CREATE INDEX IF NOT EXISTS doc_byline_date ON doc( byline, date, code );
+CREATE INDEX IF NOT EXISTS doc_date_byline ON doc( date, byline, code );
 
 CREATE VIRTUAL TABLE search USING FTS3 (
   -- table of searchable articles, with same rowid as in article
@@ -91,8 +92,9 @@ END;
   public $conf = array(
     "destdir" => "",
     "formats" => "site, epub, kindle",
-    "cmdup" => "git pull",
+    "cmdup" => "git pull 2>&1",
     "logger" => "php://output",
+    "logfile" => null,
   );
 
   /**
@@ -106,7 +108,7 @@ END;
       $this->conf['formats'] = preg_split( "@[\s,;]+@", $this->conf['formats'] );
     }
     if ( !$this->conf['destdir'] );
-    else if ( !$this->conf['destdir'] == "." ) $this->conf['destdir']="";
+    else if ( $this->conf['destdir'] == "." ) $this->conf['destdir']="";
     else $this->conf['destdir'] = rtrim($this->conf['destdir'], '\\/')."/";
     // verify output dirs for generated files
     foreach ( $this->conf['formats'] as $type ) {
@@ -114,9 +116,9 @@ END;
         $this->log( E_USER_WARNING, $type." format non supporté" );
         continue;
       }
-      $dir = $this->conf['destdir'].'/'.$type.'/';
+      $dir = $this->conf['destdir'].$type.'/';
       if ( !file_exists( $dir ) ) {
-        mkdir( $dir, 0775, true );
+        if ( !@mkdir( $dir, 0775, true ) ) exit( $dir." impossible à créer.\n");
         @chmod( $dir, 0775 );  // let @, if www-data is not owner but allowed to write
       }
     }
@@ -180,7 +182,7 @@ END;
     foreach ( $this->conf['formats'] as $type ) {
       if ( !isset(self::$_formats[$type]) ) continue;
       $extension = self::$_formats[$type];
-      $destfile = $destdir.'/'.$type.'/'.$code.$extension;
+      $destfile = $destdir.$type.'/'.$code.$extension;
       if ( !file_exists( $destfile )) continue;
       unlink($destfile);
       $echo .= " ".basename( $destfile );
@@ -201,7 +203,7 @@ END;
         continue;
       }
       $ext = self::$_formats[$type];
-      $destfile = $destdir.'/'.$type.'/'.$teinte->filename().$ext;
+      $destfile = $destdir.$type.'/'.$teinte->filename().$ext;
       // delete destfile if exists
       if ( file_exists( $destfile ) ) unlink( $destfile );
       $echo .= " ".$type;
@@ -217,9 +219,9 @@ END;
       }
       // Attention, do kindle after epub
       else if ( $type == 'kindle' ) {
-        $epubfile =  $destdir.'/epub/'.$teinte->filename().".epub";
+        $epubfile =  $destdir.'epub/'.$teinte->filename().".epub";
         // generated file
-        $mobifile = $destdir.'/epub/'.$teinte->filename().".mobi";
+        $mobifile = $destdir.'epub/'.$teinte->filename().".mobi";
         $cmd = self::$_kindlegen.' '.$epubfile;
         $last = exec ($cmd, $output, $status);
         // error ?
@@ -242,22 +244,60 @@ END;
   private function record( $teinte, $props=null )
   {
     $meta = $teinte->meta();
-    // hack to get some class info
-    if ( isset( $meta['class'] ) && $meta['class'] ) $meta['class'] .= basename( dirname( $teinte->file() ) );
-    else $meta['class'] = basename( dirname( $teinte->file() ) );
-    // supprimer la pièce, des triggers doivent normalement supprimer la cascade.
+    // URLs with string replcaements
+    if ( is_array ( $props ) ) {
+      if ( isset( $props['source'] )  && strpos( $props['source'], '%s' ) !== false ) {
+        $props['source'] = sprintf ( $props['source'], $meta['code'] );
+      }
+      if ( $props && isset( $props['identifier'] )  && strpos( $props['identifier'], '%s' ) !== false ) {
+        $props['identifier'] = sprintf ( $props['identifier'], $meta['code'] );
+      }
+    }
+    // space separated list of classnames
+    if ( !isset( $meta['class'] ) ) $meta['class'] = "";
+    $meta['class'] .= " ".basename( dirname( $teinte->file() ) );
+    if ( isset( $props['set'] ) ) $meta['class'] .= " ".$props['set'];
+    // del file, trigger should work for cascades
     $this->_q['del']->execute( array( $meta['code'] ) );
+
     $values = array_fill_keys( self::$coldoc, null );
     // replace in values, but do not add new keys from meta (intersect)
     $values = array_replace( $values, array_intersect_key( $meta, $values ) );
     // replace in values, but do not add keys, and change their order
     if ( is_array( $props ) ) $values = array_replace( $values, array_intersect_key( $props, $values ) );
+    if ( !$values['title'] ) {
+      $values['title'] = $values['code'];
+      $this->log( E_USER_ERROR, $values['code']." <title> unfound" );
+    }
     $values = array_values( $values );
+
     $this->_q['record']->execute( $values ); // no keys for values
     $lastid = $this->pdo->lastInsertId();
     $this->_q['search']->execute( array( $lastid, $teinte->ft() ) );
     return $lastid;
   }
+  /**
+   * Explore conf as sets
+   */
+  public function sets()
+  {
+    if ( !isset($this->conf['sets']) ) continue;
+    // for deletions, store the codes of existingfiles
+    $this->_cods = array();
+    $oldlog = $this->loglevel;
+    $this->loglevel = $this->loglevel|E_USER_NOTICE;
+    foreach ( $this->conf['sets'] as $set => $props ) {
+      $props['set'] = $set;
+      // resolve relative path ?
+      foreach( glob( $props['glob'] ) as $srcfile) {
+        $this->_file( $srcfile, null, $props );
+      }
+    }
+    $this->loglevel = $oldlog;
+    // delete record of delete files
+    $this->_post();
+  }
+
   /**
    * Explore some folders
    */
@@ -271,14 +311,14 @@ END;
     foreach ( $glob as $path ) {
       foreach( glob( $path ) as $srcfile) {
         // echo "\n".$srcfile." ".$force;
-        $this->_file( $srcfile, $force );
+        $this->_file( $srcfile, $force, $props );
       }
     }
     $this->_post();
     $this->loglevel = $oldlog;
   }
 
-  private function _file( $srcfile, $force=false )
+  private function _file( $srcfile, $force=false, $props=array() )
   {
     $code = pathinfo( $srcfile, PATHINFO_FILENAME );
     $this->_cods[] = $code;
@@ -296,10 +336,9 @@ END;
       // toc mays be null
       if ( $type == "toc" ) continue;
       $extension = self::$_formats[$type];
-      $destfile = $this->conf["destdir"].'/'.$type.'/'.$code.$extension;
+      $destfile = $this->conf["destdir"].$type.'/'.$code.$extension;
       if ( !file_exists( $destfile )) {
         $force = true;
-        // echo( $destfile."\n");
       }
     }
     if ( !$force ) return $force;
@@ -312,8 +351,9 @@ END;
       $this->log( E_USER_ERROR, $srcfile." XML mal formé" );
       return false;
     }
-    $this->record( $teinte );
     $this->export( $teinte, $this->conf["destdir"] );
+    // record in base after generation of file
+    $this->record( $teinte, $props );
     flush();
   }
 
@@ -384,7 +424,7 @@ END;
     }
     echo "  </tr>\n";
     $i = 1;
-    foreach ($this->pdo->query("SELECT * FROM oeuvre ORDER BY code") as $oeuvre) {
+    foreach ($this->pdo->query("SELECT * FROM doc ORDER BY code") as $oeuvre) {
       echo "  <tr>\n";
       foreach ( $cols as $code ) {
         if (!isset($labels[$code])) continue;
@@ -397,10 +437,10 @@ END;
           else echo $oeuvre['publisher'];
         }
         else if("creator" == $code || "author" == $code) {
-          echo $oeuvre['author'];
+          echo $oeuvre['byline'];
         }
         else if("date" == $code || "year" == $code) {
-          echo $oeuvre['year'];
+          echo $oeuvre['date'];
         }
         else if("title" == $code) {
           if ($oeuvre['identifier']) echo '<a href="'.$oeuvre['identifier'].'">'.$oeuvre['title']."</a>";
@@ -412,9 +452,8 @@ END;
         else if("relation" == $code || "downloads" == $code) {
           if ($oeuvre['source']) echo '<a href="'.$oeuvre['source'].'">TEI</a>';
           $sep = ", ";
-          foreach ( self::$formats as $label=>$extension) {
-            if ($label == 'article') continue;
-            echo $sep.'<a href="'.$label.'/'.$oeuvre['code'].$extension.'">'.$label.'</a>';
+          foreach ( $this->conf['formats'] as $type ) {
+            echo $sep.'<a href="'.$type.'/'.$oeuvre['code'].self::$_formats[$type].'">'.$type.'</a>';
           }
         }
         echo "</td>\n";
@@ -483,6 +522,14 @@ END;
    */
   function log( $errno, $errstr, $errfile=null, $errline=null, $errcontext=null )
   {
+    if ( $this->conf['logfile'] ) {
+      $line = date( "Y-m-d H:i:s   " );
+      if ( E_ERROR == $errno || E_USER_ERROR == $errno ) $line .= "ERROR ";
+      else if ( E_WARNING == $errno || E_USER_WARNING == $errno ) $line .= "WARNING ";
+      $line .= $errstr;
+      $line .= "\n";
+      error_log( $line, 3, $this->conf['logfile'] );
+    }
     if ( !$this->loglevel & $errno ) return false;
     $errstr=preg_replace("/XSLTProcessor::transform[^:]*:/", "", $errstr, -1, $count);
     /* ?
@@ -499,7 +546,7 @@ END;
   /**
    * Check epub
    */
-  static function epubcheck($glob)
+  static function epubcheck( $glob )
   {
     echo "epubcheck epub/*.epub\n";
     foreach(glob($glob) as $file) {
@@ -518,8 +565,19 @@ END;
   static function cli()
   {
     $timeStart = microtime(true);
-    $usage = "\nusage    : php -f ".basename(__FILE__).' base.sqlite action "dir/*.xml"'."\n\n";
+    $usage = "\nusage    : php -f ".basename(__FILE__).' conf.php
+usage    : php -f '.basename(__FILE__).' base.sqlite action "dir/*.xml"'."\n\n";
     array_shift($_SERVER['argv']); // shift first arg, the script filepath
+    if ( count($_SERVER['argv']) == 1 ) {
+      $path = $_SERVER['argv'][0];
+      if ( !file_exists( $path ) ) exit( $path+" — ce fichier n’existe pas." );
+      $conf = include( $path );
+      $build = new Teinte_Build( $conf );
+      $build->glob();
+      exit();
+    }
+
+
     if (count($_SERVER['argv']) < 2) exit($usage);
     $sqlite = array_shift($_SERVER['argv']);
     $action = array_shift($_SERVER['argv']);
@@ -528,7 +586,7 @@ END;
       foreach(glob($glob) as $srcfile) {
         fwrite (STDERR, $srcfile);
         if ("insert" == $action) {
-          $base->insert($srcfile);
+          $base->insert( $srcfile );
         }
 
         // $base->add($file, $setcode);

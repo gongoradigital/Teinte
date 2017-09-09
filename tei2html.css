@@ -1,10 +1,10 @@
 @charset "utf-8";
 /**
- * © 2002, frederic.glorieux@fictif.org et AJLSM
- * © 2006, frederic.glorieux@fictif.org
- * © 2007, frederic.glorieux@fictif.org et École nationale des chartes
- * © 2012, frederic.glorieux@fictif.org
  * © 2013, frederic.glorieux@fictif.org et LABEX OBVIL
+ * © 2012, frederic.glorieux@fictif.org
+ * © 2007, frederic.glorieux@fictif.org et École nationale des chartes
+ * © 2006, frederic.glorieux@fictif.org
+ * © 2002, frederic.glorieux@fictif.org et AJLSM
  *
  * This program is a free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License
@@ -20,7 +20,6 @@ Neutral HTML
 * Tailles : variations relatives (%, em)
 * Couleurs : impersonnel, tout au plus variations de gris
 * Polices : quelques suggestion de familles
-* Positionnement : rien Doit aussi servir de répertoire de hack.
 
 refs https://github.com/necolas/normalize.css/blob/master/normalize.css
 */
@@ -34,7 +33,7 @@ audio:not([controls]) { display: none; height: 0; }
 table, td, code, dd { font-size: 100%; }
 * { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; -ms-box-sizing: border-box; box-sizing: border-box; }
 article:after { content: " "; display: block; height: 0; clear: both; visibility: hidden; }
-body, html { min-height: 100%; margin: 0; padding: 0; }
+body, html { height: 100%; margin: 0; padding: 0; }
 /* fonts */
 /* pas mûr -moz-hyphens: auto; -webkit-hyphens: auto; adobe-hyphenate: auto; hyphens: auto; */
 body { font: 16px/24px Georgia, "Bitstream Vera Serif", Times, serif; }
@@ -177,7 +176,8 @@ input:-ms-input-placeholder { color: #AAA !important; font-style: italic !import
 textarea { overflow: auto; width: 100%; height: 20em; display: block; }
 textarea[readonly], textarea.readonly {  font-size: 20px; padding: 1em; height: 10em; width: 90%; border: 1px #CCC solid; }
 
-/** TEI elements, in TEI element name order, before type modifier in next block */
+/** TEI classes, in TEI element name order */
+
 h1.act, h2.act, h1.castList, h2.castList { text-transform: uppercase; }
 .actor { font-variant: small-caps; }
 .argument { margin: 2em 0 3em 0; line-height: 140%; text-indent: 0; font-size: 85%; font-style: italic; text-align: justify }
@@ -203,7 +203,7 @@ p.caption { font-weight: bold; }
 ul.castList { list-style: none; }
 /* numbering */
 .cb, .pb, .ed, small.l, small.l-n { font-weight: normal; font-style: normal; color: grey; margin-top: 0; margin-bottom: 0; text-indent: 0; text-decoration: none; border: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-.cb, .pb, .ed  { float: right; margin-top: 0.1rem; margin-right: -5rem; max-width: 10rem; background-color: #FFFFFF; padding:1px 1ex 1px 0; }
+.cb, .pb, .ed { background-color: #FFFFFF; padding: 1px 1ex 1px 0; position: absolute; left: 0.3rem; /* float: right; problèmes dans les tableaux */ }
 a.pb:hover { background-color: #FFFFFF; }
 .lb { color: grey; font-size: 11px; }
 .l-n { position:absolute; margin-left: -3em; margin-left: -2.5rem; }
@@ -267,8 +267,6 @@ blockquote .label { margin: 1ex 0 0.5ex 2em; text-align: left; }
 figure .label { text-align: right; margin-top: 0; }
 div.lg { margin-top: 1em; margin-bottom: 1em; }
 .sp .lg { margin-top: 0; margin-bottom: 0; }
-.lg .l.first { text-indent: -1rem; }
-.lg .l.first .l-n { margin-left: -3.5rem; }
 .marginalia { display:block; float: right; text-indent: 0; clear: both; margin: 1px -10em 1px 1em; border: 1px #C9C6BB solid; box-shadow: 10px 0px 10px #E2DED0; padding: 0.2ex 1ex !important; background: #FDFDFC; width: 15em; text-align:right; line-height: 120%; }
 .marginalia a { border: none; text-decoration: none; }
 .marginalia:target { background-color: #FFFFEE; }
@@ -347,6 +345,8 @@ li.witness { list-style: square; font-size: 90%; font-family: sans-serif; }
 /* @rend, @type useful classes, in alphabetic order */
 
 .alert { color: #971716; font-size: 120%; }
+section.article { border-bottom: 2px white solid; margin-top: 0; padding-top: 2rem; }
+section.article h2  { margin-top: 0; }
 .attention { color: red; }
 .b, .bold { font-weight: bold; }
 .border { border: 1px solid #808080; padding: 1ex; }
