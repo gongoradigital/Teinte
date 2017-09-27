@@ -2665,7 +2665,10 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
             </choice>
           </oneOrMore>
           <oneOrMore>
-            <ref name="block"/>
+            <choice>
+              <ref name="block"/>
+              <ref name="note"/>
+            </choice>
           </oneOrMore>
         </choice>
       </element>
