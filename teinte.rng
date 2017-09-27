@@ -2662,13 +2662,11 @@ Zero width non joiner: x‌x‌x‌x‌x‌x‌x‌x‌x‌x
               <ref name="indexable"/>
               <ref name="lb"/>
               <ref name="typo"/>
+              <ref name="note"/>
             </choice>
           </oneOrMore>
           <oneOrMore>
-            <choice>
-              <ref name="block"/>
-              <ref name="note"/>
-            </choice>
+            <ref name="block"/>
           </oneOrMore>
         </choice>
       </element>
